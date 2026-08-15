@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102d2a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Poundwise" />
+    <meta
+      name="description"
+      content="영국 생활을 위한 GBP·KRW 이중 통화 개인 가계부"
+    />
+    <title>Poundwise · 영국 생활 가계부</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./app-icon-192.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell" id="app-shell">
+      <aside class="sidebar" aria-label="주요 메뉴">
+        <a class="brand" href="#dashboard" data-nav="dashboard" aria-label="Poundwise 홈">
+          <span class="brand-mark" aria-hidden="true">
+            <svg><use href="#icon-wallet"></use></svg>
+          </span>
+          <span>
+            <strong>Poundwise</strong>
+            <small>UK student budget</small>
+          </span>
+        </a>
+
+        <nav class="side-nav">
+          <button class="nav-item is-active" type="button" data-view-target="dashboard">
+            <svg aria-hidden="true"><use href="#icon-home"></use></svg>
+            <span>대시보드</span>
+          </button>
+          <button class="nav-item" type="button" data-view-target="transactions">
+            <svg aria-hidden="true"><use href="#icon-receipt"></use></svg>
+            <span>거래 내역</span>
+          </button>
+          <button class="nav-item" type="button" data-view-target="settings">
+            <svg aria-hidden="true"><use href="#icon-settings"></use></svg>
+            <span>예산 설정</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-card">
+          <span class="sidebar-card-icon" aria-hidden="true">
+            <svg><use href="#icon-sparkles"></use></svg>
+          </span>
+          <p>오늘의 예산</p>
+          <strong id="sidebar-daily-gbp">£0.00</strong>
+          <small id="sidebar-daily-krw">₩0</small>
+          <span class="sidebar-card-note" id="sidebar-days-left">다음 용돈일까지 0일</span>
+        </div>
+
+        <p class="sidebar-footnote" id="sidebar-storage-note">데이터는 이 브라우저에만 저장됩니다.</p>
+      </aside>
+
+      <div class="app-content">
+        <header class="topbar">
+          <button class="mobile-brand" type="button" data-view-target="dashboard" aria-label="대시보드로 이동">
+            <span class="brand-mark" aria-hidden="true">
+              <svg><use href="#icon-wallet"></use></svg>
+            </span>
+            <strong>Poundwise</strong>
+          </button>
+
+          <div class="topbar-actions">
+            <button class="cloud-pill" id="cloud-pill" type="button" data-view-target="settings" data-focus-section="cloud" aria-label="기기 동기화 설정">
+              <span class="cloud-pill-icon" aria-hidden="true"><svg><use href="#icon-cloud"></use></svg></span>
+              <span>
+                <small id="cloud-pill-label">이 기기에만 저장</small>
+                <strong id="cloud-pill-status">동기화 꺼짐</strong>
+              </span>
+            </button>
+            <div class="rate-pill" id="rate-pill">
+              <span class="rate-status-dot" id="rate-status-dot" aria-hidden="true"></span>
+              <span>
+                <small id="rate-source-label">환율 확인 중</small>
+                <strong>£1 = <span id="header-rate">—</span></strong>
+              </span>
+              <button class="icon-button compact" id="refresh-rate-button" type="button" aria-label="환율 새로고침" title="환율 새로고침">
+                <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
+              </button>
+            </div>
+            <button class="primary-button top-add-button" type="button" data-open-transaction>
+              <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+              <span>거래 추가</span>
+            </button>
+          </div>
+        </header>
+
+        <main class="main-content">
+          <section class="view-section is-active" id="view-dashboard" data-view="dashboard">
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">MY MONEY OVERVIEW</p>
+                <h1><span id="greeting-text">안녕하세요</span> <span aria-hidden="true">👋</span></h1>
+                <p id="dashboard-subtitle">오늘도 부담 없이, 계획한 만큼만 써보세요.</p>
+              </div>
+              <div class="date-chip">
+                <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
+                <span id="today-label">오늘</span>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              <article class="balance-card">
+                <div class="balance-card-head">
+                  <div>
+                    <span class="card-label light">현재 총 잔액</span>
+                    <p class="balance-note">모든 수입과 지출을 반영한 금액</p>
+                  </div>
+                  <span class="balance-icon" aria-hidden="true">
+                    <svg><use href="#icon-coins"></use></svg>
+                  </span>
+                </div>
+                <div class="balance-values">
+                  <strong id="total-balance-gbp">£0.00</strong>
+                  <span id="total-balance-krw">₩0</span>
+                </div>
+                <div class="balance-footer">
+                  <div>
+                    <small>이번 주기 지출</small>
+                    <strong id="cycle-spent-inline">£0.00</strong>
+                  </div>
+                  <span class="balance-divider" aria-hidden="true"></span>
+                  <div>
+                    <small>남은 자유 예산</small>
+                    <strong id="spendable-inline">£0.00</strong>
+                  </div>
+                </div>
+                <span class="balance-orb orb-one" aria-hidden="true"></span>
+                <span class="balance-orb orb-two" aria-hidden="true"></span>
+              </article>
+
+              <article class="countdown-card">
+                <div class="countdown-top">
+                  <span class="countdown-icon" aria-hidden="true">
+                    <svg><use href="#icon-calendar-heart"></use></svg>
+                  </span>
+                  <span class="countdown-badge" id="countdown-badge">D-0</span>
+                </div>
+                <div>
+                  <span class="card-label">다음 용돈일</span>
+                  <strong class="countdown-date" id="next-allowance-label">설정 필요</strong>
+                  <p id="countdown-copy">날짜를 설정하면 하루 예산을 계산해 드려요.</p>
+                </div>
+                <button class="text-button" type="button" data-view-target="settings">
+                  일정 변경
+                  <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                </button>
+              </article>
+            </div>
+
+            <div class="metric-grid">
+              <article class="metric-card accent-mint">
+                <div class="metric-card-head">
+                  <span class="metric-icon" aria-hidden="true"><svg><use href="#icon-sun"></use></svg></span>
+                  <span class="metric-trend" id="daily-status-badge">오늘</span>
+                </div>
+                <span class="card-label">오늘 권장 사용액</span>
+                <strong id="daily-budget-gbp">£0.00</strong>
+                <small id="daily-budget-krw">약 ₩0</small>
+              </article>
+
+              <article class="metric-card accent-blue">
+                <div class="metric-card-head">
+                  <span class="metric-icon" aria-hidden="true"><svg><use href="#icon-week"></use></svg></span>
+                  <span class="metric-trend" id="week-days-badge">7일</span>
+                </div>
+                <span class="card-label">이번 주 사용 가능액</span>
+                <strong id="weekly-budget-gbp">£0.00</strong>
+                <small id="weekly-budget-krw">약 ₩0</small>
+              </article>
+
+              <article class="metric-card accent-coral">
+                <div class="metric-card-head">
+                  <span class="metric-icon" aria-hidden="true"><svg><use href="#icon-chart"></use></svg></span>
+                  <span class="metric-trend" id="spending-status-badge">안정적</span>
+                </div>
+                <span class="card-label">현재 지출률</span>
+                <strong id="spending-rate-value">0%</strong>
+                <div class="mini-progress" aria-hidden="true"><span id="spending-rate-bar"></span></div>
+                <small id="spending-rate-copy">주기 예산의 0%를 사용했어요</small>
+              </article>
+
+              <article class="metric-card accent-lilac">
+                <div class="metric-card-head">
+                  <span class="metric-icon" aria-hidden="true"><svg><use href="#icon-piggy"></use></svg></span>
+                  <span class="metric-trend" id="savings-status-badge">진행 중</span>
+                </div>
+                <span class="card-label">저축 진행률</span>
+                <strong id="savings-rate-value">0%</strong>
+                <div class="mini-progress" aria-hidden="true"><span id="savings-rate-bar"></span></div>
+                <small id="savings-rate-copy">목표까지 £0.00 남았어요</small>
+              </article>
+            </div>
+
+            <div class="content-grid">
+              <article class="panel budget-panel">
+                <div class="panel-heading">
+                  <div>
+                    <span class="card-label">이번 주기 예산</span>
+                    <h2>계획대로 잘 가고 있어요</h2>
+                  </div>
+                  <button class="icon-button" type="button" data-view-target="settings" aria-label="예산 설정 열기" title="예산 설정">
+                    <svg aria-hidden="true"><use href="#icon-sliders"></use></svg>
+                  </button>
+                </div>
+
+                <div class="budget-amount-row">
+                  <div>
+                    <small>사용한 금액</small>
+                    <strong id="budget-spent-value">£0.00</strong>
+                  </div>
+                  <div class="align-right">
+                    <small>주기 예산</small>
+                    <strong id="budget-total-value">£0.00</strong>
+                  </div>
+                </div>
+                <div class="large-progress" aria-label="예산 사용 진행률">
+                  <span id="budget-progress-bar"></span>
+                </div>
+                <div class="budget-scale">
+                  <span id="period-start-label">주기 시작</span>
+                  <strong id="budget-remaining-value">£0.00 남음</strong>
+                  <span id="period-end-label">주기 종료</span>
+                </div>
+
+                <div class="savings-callout">
+                  <span class="savings-callout-icon" aria-hidden="true"><svg><use href="#icon-shield"></use></svg></span>
+                  <div>
+                    <small>앞으로 더 저축해야 할 금액</small>
+                    <strong id="remaining-savings-gbp">£0.00</strong>
+                    <span id="remaining-savings-krw">약 ₩0</span>
+                  </div>
+                  <button class="small-button" type="button" data-view-target="settings">저축 업데이트</button>
+                </div>
+              </article>
+
+              <article class="panel category-panel">
+                <div class="panel-heading">
+                  <div>
+                    <span class="card-label">카테고리별 지출</span>
+                    <h2>어디에 가장 많이 썼을까요?</h2>
+                  </div>
+                  <span class="period-chip" id="category-period-chip">이번 주기</span>
+                </div>
+                <div class="category-content">
+                  <div class="donut-wrap">
+                    <div class="donut-chart" id="category-donut" role="img" aria-label="카테고리별 지출 차트">
+                      <div class="donut-center">
+                        <small>총 지출</small>
+                        <strong id="donut-total">£0</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="category-list" id="category-summary-list"></div>
+                </div>
+                <div class="empty-state compact-empty" id="category-empty-state" hidden>
+                  <span aria-hidden="true"><svg><use href="#icon-chart"></use></svg></span>
+                  <p>지출 거래를 추가하면 분석이 시작돼요.</p>
+                </div>
+              </article>
+            </div>
+
+            <article class="panel recent-panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="card-label">최근 거래</span>
+                  <h2>최근에 기록한 내역</h2>
+                </div>
+                <button class="text-button" type="button" data-view-target="transactions">
+                  전체 보기
+                  <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                </button>
+              </div>
+              <div class="transaction-list" id="recent-transaction-list"></div>
+              <div class="empty-state" id="recent-empty-state" hidden>
+                <span aria-hidden="true"><svg><use href="#icon-receipt"></use></svg></span>
+                <h3>아직 거래가 없어요</h3>
+                <p>첫 수입이나 지출을 기록해 보세요.</p>
+                <button class="secondary-button" type="button" data-open-transaction>첫 거래 추가</button>
+              </div>
+            </article>
+          </section>
+
+          <section class="view-section" id="view-transactions" data-view="transactions" hidden>
+            <div class="page-heading with-actions">
+              <div>
+                <p class="eyebrow">TRANSACTIONS</p>
+                <h1>거래 내역</h1>
+                <p>수입과 지출을 한곳에서 확인하고 관리하세요.</p>
+              </div>
+              <button class="primary-button" type="button" data-open-transaction>
+                <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+                거래 추가
+              </button>
+            </div>
+
+            <div class="transaction-summary-grid">
+              <article class="summary-card income-summary">
+                <span class="summary-icon" aria-hidden="true"><svg><use href="#icon-trending-up"></use></svg></span>
+                <div><small>이번 주기 수입</small><strong id="transaction-income-total">£0.00</strong><span id="transaction-income-krw">₩0</span></div>
+              </article>
+              <article class="summary-card expense-summary">
+                <span class="summary-icon" aria-hidden="true"><svg><use href="#icon-trending-down"></use></svg></span>
+                <div><small>이번 주기 지출</small><strong id="transaction-expense-total">£0.00</strong><span id="transaction-expense-krw">₩0</span></div>
+              </article>
+              <article class="summary-card net-summary">
+                <span class="summary-icon" aria-hidden="true"><svg><use href="#icon-scale"></use></svg></span>
+                <div><small>이번 주기 순변동</small><strong id="transaction-net-total">£0.00</strong><span id="transaction-net-krw">₩0</span></div>
+              </article>
+            </div>
+
+            <article class="panel transaction-panel">
+              <div class="transaction-toolbar">
+                <label class="search-field">
+                  <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+                  <span class="sr-only">거래 검색</span>
+                  <input id="transaction-search" type="search" placeholder="메모 또는 카테고리 검색" />
+                </label>
+                <label class="select-field compact-select">
+                  <span class="sr-only">거래 유형 필터</span>
+                  <select id="transaction-type-filter">
+                    <option value="all">모든 유형</option>
+                    <option value="expense">지출만</option>
+                    <option value="income">수입만</option>
+                  </select>
+                  <svg aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+                </label>
+                <label class="select-field compact-select">
+                  <span class="sr-only">카테고리 필터</span>
+                  <select id="transaction-category-filter">
+                    <option value="all">모든 카테고리</option>
+                  </select>
+                  <svg aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+                </label>
+                <button class="icon-button toolbar-icon" id="export-shortcut-button" type="button" aria-label="CSV 내보내기" title="CSV 내보내기">
+                  <svg aria-hidden="true"><use href="#icon-download"></use></svg>
+                </button>
+              </div>
+
+              <div class="table-wrap">
+                <table class="transaction-table">
+                  <thead>
+                    <tr>
+                      <th>거래</th>
+                      <th>날짜</th>
+                      <th>카테고리</th>
+                      <th>금액</th>
+                      <th><span class="sr-only">작업</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="transaction-table-body"></tbody>
+                </table>
+              </div>
+              <div class="mobile-transaction-list" id="mobile-transaction-list"></div>
+              <div class="empty-state" id="transaction-empty-state" hidden>
+                <span aria-hidden="true"><svg><use href="#icon-search"></use></svg></span>
+                <h3 id="transaction-empty-title">표시할 거래가 없어요</h3>
+                <p id="transaction-empty-copy">새 거래를 추가하거나 필터를 바꿔보세요.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="view-section" id="view-settings" data-view="settings" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">PLAN & SETTINGS</p>
+                <h1>예산 및 공유 설정</h1>
+                <p>생활 주기와 저축 목표, 가족 공유를 내 상황에 맞게 조정하세요.</p>
+              </div>
+            </div>
+
+            <div class="settings-layout">
+              <form class="panel settings-card" id="budget-settings-form">
+                <div class="settings-card-heading">
+                  <span class="settings-heading-icon mint-icon" aria-hidden="true"><svg><use href="#icon-sliders"></use></svg></span>
+                  <div>
+                    <h2>생활 예산</h2>
+                    <p>잔액과 다음 용돈일까지의 사용 계획을 정합니다.</p>
+                  </div>
+                </div>
+
+                <div class="form-grid two-columns">
+                  <label class="form-field">
+                    <span>예산 주기</span>
+                    <span class="select-field">
+                      <select id="settings-cycle-type" name="cycleType">
+                        <option value="allowance">용돈일 기준</option>
+                        <option value="monthly">매월 1일 기준</option>
+                      </select>
+                      <svg aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+                    </span>
+                  </label>
+                  <label class="form-field">
+                    <span>이번 주기 용돈/예산</span>
+                    <span class="currency-input">
+                      <span>£</span>
+                      <input id="settings-cycle-budget" name="cycleBudget" type="number" min="0" step="0.01" required />
+                    </span>
+                  </label>
+                  <label class="form-field">
+                    <span>다음 용돈일</span>
+                    <span class="input-with-icon">
+                      <input id="settings-next-date" name="nextAllowanceDate" type="date" required />
+                      <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
+                    </span>
+                  </label>
+                  <label class="form-field">
+                    <span>현재 초기 잔액</span>
+                    <span class="joined-inputs">
+                      <input id="settings-initial-balance" name="initialBalance" type="number" step="0.01" required />
+                      <select id="settings-initial-currency" name="initialBalanceCurrency" aria-label="초기 잔액 통화">
+                        <option value="GBP">GBP</option>
+                        <option value="KRW">KRW</option>
+                      </select>
+                    </span>
+                  </label>
+                </div>
+
+                <div class="section-divider"></div>
+                <div class="inline-section-heading">
+                  <div>
+                    <h3>저축 목표</h3>
+                    <p>고정 금액 또는 예산 비율로 설정할 수 있어요.</p>
+                  </div>
+                  <div class="segmented-control" id="savings-mode-control" role="group" aria-label="저축 목표 방식">
+                    <button type="button" data-savings-mode="amount" class="is-active">금액</button>
+                    <button type="button" data-savings-mode="rate">비율</button>
+                  </div>
+                </div>
+                <div class="form-grid two-columns">
+                  <label class="form-field">
+                    <span id="savings-value-label">목표 저축액</span>
+                    <span class="currency-input" id="savings-value-wrap">
+                      <span id="savings-value-prefix">£</span>
+                      <input id="settings-savings-value" name="savingsValue" type="number" min="0" step="0.01" required />
+                      <span class="input-suffix" id="savings-value-suffix" hidden>%</span>
+                    </span>
+                  </label>
+                  <label class="form-field">
+                    <span>현재 주기 저축 완료액</span>
+                    <span class="currency-input">
+                      <span>£</span>
+                      <input id="settings-saved-amount" name="savedAmount" type="number" min="0" step="0.01" required />
+                    </span>
+                  </label>
+                </div>
+
+                <div class="settings-preview">
+                  <div><small>계산된 목표</small><strong id="settings-goal-preview">£0.00</strong></div>
+                  <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                  <div><small>추가 저축 필요</small><strong id="settings-remaining-preview">£0.00</strong></div>
+                  <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                  <div><small>하루 사용 가능</small><strong id="settings-daily-preview">£0.00</strong></div>
+                </div>
+
+                <div class="form-actions">
+                  <span class="save-hint" id="budget-save-hint">변경 사항은 저장 버튼을 눌러 반영됩니다.</span>
+                  <button class="primary-button" type="submit">예산 저장</button>
+                </div>
+              </form>
+
+              <div class="settings-side-column">
+                <article class="panel settings-card cloud-card" id="cloud-card">
+                  <div class="settings-card-heading compact-heading">
+                    <span class="settings-heading-icon mint-icon" aria-hidden="true"><svg><use href="#icon-cloud"></use></svg></span>
+                    <div>
+                      <h2>가족 공유 · 기기 동기화</h2>
+                      <p>가족과 같은 가계부를 사용하고 모든 기기에서 이어서 기록합니다.</p>
+                    </div>
+                  </div>
+
+                  <div class="cloud-state-banner" id="cloud-state-banner">
+                    <span class="cloud-state-icon" aria-hidden="true"><svg><use href="#icon-device"></use></svg></span>
+                    <div><strong id="cloud-state-title">로컬 모드</strong><small id="cloud-state-copy">현재 기기에만 저장되고 있어요.</small></div>
+                    <span class="cloud-state-dot" id="cloud-state-dot" aria-hidden="true"></span>
+                  </div>
+
+                  <div class="cloud-view" id="cloud-config-required-view">
+                    <div class="cloud-empty-illustration" aria-hidden="true"><svg><use href="#icon-users"></use></svg></div>
+                    <h3>클라우드 연결이 필요해요</h3>
+                    <p>아래 연결 설정에 Supabase 프로젝트 정보를 한 번 입력하면 로그인과 가족 공유를 사용할 수 있어요.</p>
+                    <button class="secondary-button full-button" id="open-cloud-config-button" type="button">연결 설정 열기</button>
+                  </div>
+
+                  <div class="cloud-view" id="cloud-auth-view" hidden>
+                    <div class="segmented-control cloud-auth-mode" role="group" aria-label="계정 메뉴">
+                      <button class="is-active" type="button" data-cloud-auth-mode="signin">로그인</button>
+                      <button type="button" data-cloud-auth-mode="signup">회원가입</button>
+                    </div>
+                    <form id="cloud-auth-form" class="cloud-form">
+                      <label class="form-field" id="cloud-display-name-field" hidden>
+                        <span>표시 이름</span>
+                        <input id="cloud-display-name" type="text" maxlength="30" autocomplete="name" placeholder="예: 민지" />
+                      </label>
+                      <label class="form-field">
+                        <span>이메일</span>
+                        <input id="cloud-email" type="email" autocomplete="email" placeholder="name@example.com" required />
+                      </label>
+                      <label class="form-field">
+                        <span>비밀번호</span>
+                        <input id="cloud-password" type="password" minlength="8" autocomplete="current-password" placeholder="8자 이상" required />
+                      </label>
+                      <button class="primary-button full-button" id="cloud-auth-submit" type="submit">로그인</button>
+                    </form>
+                  </div>
+
+                  <div class="cloud-view" id="cloud-household-view" hidden>
+                    <div class="signed-in-account">
+                      <span aria-hidden="true"><svg><use href="#icon-user"></use></svg></span>
+                      <div><small>로그인한 계정</small><strong id="cloud-account-email">—</strong></div>
+                      <button class="text-button" id="cloud-signout-before-family" type="button">로그아웃</button>
+                    </div>
+                    <form id="create-household-form" class="cloud-action-box">
+                      <span class="cloud-action-icon" aria-hidden="true"><svg><use href="#icon-home"></use></svg></span>
+                      <div class="cloud-action-copy"><strong>새 가족 가계부 만들기</strong><small>현재 기기의 거래와 예산을 첫 데이터로 올립니다.</small></div>
+                      <label class="form-field full-span">
+                        <span>가계부 이름</span>
+                        <input id="new-household-name" type="text" maxlength="60" placeholder="예: 런던 우리집" required />
+                      </label>
+                      <label class="form-field full-span">
+                        <span>내 표시 이름</span>
+                        <input id="new-household-display-name" type="text" maxlength="30" placeholder="예: 민지" required />
+                      </label>
+                      <button class="primary-button full-button full-span" type="submit">가족 가계부 만들기</button>
+                    </form>
+                    <div class="cloud-or"><span>또는</span></div>
+                    <form id="join-household-form" class="cloud-action-box compact-action-box">
+                      <span class="cloud-action-icon blue-icon" aria-hidden="true"><svg><use href="#icon-key"></use></svg></span>
+                      <div class="cloud-action-copy"><strong>초대 코드로 참여</strong><small>가족 데이터와 이 기기의 거래를 합칩니다.</small></div>
+                      <label class="form-field full-span">
+                        <span>8자리 초대 코드</span>
+                        <input id="household-invite-code-input" class="invite-code-input" type="text" maxlength="8" autocomplete="off" placeholder="AB12CD34" required />
+                      </label>
+                      <label class="form-field full-span">
+                        <span>내 표시 이름</span>
+                        <input id="join-household-display-name" type="text" maxlength="30" placeholder="예: 준호" required />
+                      </label>
+                      <button class="secondary-button full-button full-span" type="submit">가족 가계부 참여하기</button>
+                    </form>
+                  </div>
+
+                  <div class="cloud-view" id="cloud-connected-view" hidden>
+                    <div class="family-heading">
+                      <span class="family-avatar" aria-hidden="true"><svg><use href="#icon-users"></use></svg></span>
+                      <div><small>공유 중인 가계부</small><strong id="cloud-household-name">우리 가족</strong></div>
+                      <span class="role-badge" id="cloud-role-badge">멤버</span>
+                    </div>
+                    <div class="invite-code-box">
+                      <div><small>가족 초대 코드</small><strong id="cloud-invite-code">--------</strong></div>
+                      <button class="icon-button" id="copy-invite-code-button" type="button" aria-label="초대 코드 복사" title="초대 코드 복사"><svg><use href="#icon-copy"></use></svg></button>
+                    </div>
+                    <div class="member-section">
+                      <div class="member-section-head"><strong>함께 쓰는 사람</strong><small id="cloud-member-count">0명</small></div>
+                      <div class="member-list" id="cloud-member-list"></div>
+                    </div>
+                    <div class="sync-status-row">
+                      <span class="sync-icon" id="cloud-sync-icon" aria-hidden="true"><svg><use href="#icon-refresh"></use></svg></span>
+                      <div><strong id="cloud-sync-title">동기화 준비됨</strong><small id="cloud-last-sync">아직 동기화하지 않았어요.</small></div>
+                    </div>
+                    <div class="button-row cloud-button-row">
+                      <button class="primary-button" id="sync-now-button" type="button"><svg><use href="#icon-refresh"></use></svg>지금 동기화</button>
+                      <button class="text-button danger-text" id="cloud-signout-button" type="button"><svg><use href="#icon-log-out"></use></svg>로그아웃</button>
+                    </div>
+                  </div>
+
+                  <details class="cloud-config-details" id="cloud-config-details">
+                    <summary>클라우드 연결 설정</summary>
+                    <form id="cloud-config-form" class="cloud-form config-form">
+                      <label class="form-field">
+                        <span>Supabase 프로젝트 URL</span>
+                        <input id="supabase-url-input" type="url" inputmode="url" placeholder="https://xxxxx.supabase.co" required />
+                      </label>
+                      <label class="form-field">
+                        <span>Publishable 또는 anon key</span>
+                        <input id="supabase-key-input" type="password" autocomplete="off" placeholder="sb_publishable_..." required />
+                      </label>
+                      <p class="config-warning"><svg><use href="#icon-shield"></use></svg>브라우저용 공개 키만 입력하세요. secret/service_role 키는 절대 입력하면 안 됩니다.</p>
+                      <div class="button-row config-actions">
+                        <button class="secondary-button" id="clear-cloud-config-button" type="button">연결 지우기</button>
+                        <button class="primary-button" type="submit">연결 저장</button>
+                      </div>
+                    </form>
+                  </details>
+                  <p class="info-note cloud-privacy-note"><svg aria-hidden="true"><use href="#icon-lock"></use></svg>가족 멤버만 공유 데이터를 볼 수 있도록 데이터베이스 보안 정책을 적용합니다.</p>
+                </article>
+
+                <article class="panel settings-card rate-settings-card">
+                  <div class="settings-card-heading compact-heading">
+                    <span class="settings-heading-icon blue-icon" aria-hidden="true"><svg><use href="#icon-globe"></use></svg></span>
+                    <div>
+                      <h2>GBP/KRW 환율</h2>
+                      <p>자동 환율과 수동 대체 값을 관리합니다.</p>
+                    </div>
+                  </div>
+                  <div class="live-rate-display">
+                    <div>
+                      <span class="live-indicator" id="settings-rate-indicator"><i></i><span>자동 환율</span></span>
+                      <strong>£1 = <span id="settings-rate-value">—</span></strong>
+                      <small id="settings-rate-updated">업데이트 확인 중</small>
+                    </div>
+                    <button class="icon-button" id="settings-refresh-rate" type="button" aria-label="환율 새로고침">
+                      <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
+                    </button>
+                  </div>
+                  <div class="manual-rate-form">
+                    <label class="form-field">
+                      <span>수동 환율 <small>(1 GBP당 KRW)</small></span>
+                      <span class="currency-input">
+                        <span>₩</span>
+                        <input id="manual-rate-input" type="number" min="1" step="0.01" placeholder="예: 1850" />
+                      </span>
+                    </label>
+                    <div class="button-row">
+                      <button class="secondary-button" id="apply-manual-rate" type="button">수동 환율 적용</button>
+                      <button class="text-button" id="restore-auto-rate" type="button">자동으로 복귀</button>
+                    </div>
+                  </div>
+                  <p class="info-note">
+                    <svg aria-hidden="true"><use href="#icon-info"></use></svg>
+                    자동 연결에 실패하면 마지막 성공 환율을 유지합니다.
+                  </p>
+                </article>
+
+                <article class="panel settings-card data-card">
+                  <div class="settings-card-heading compact-heading">
+                    <span class="settings-heading-icon lilac-icon" aria-hidden="true"><svg><use href="#icon-database"></use></svg></span>
+                    <div>
+                      <h2>내 데이터</h2>
+                      <p>거래를 CSV 파일로 백업하거나 옮길 수 있어요.</p>
+                    </div>
+                  </div>
+                  <div class="data-action-list">
+                    <button type="button" id="export-csv-button">
+                      <span><svg aria-hidden="true"><use href="#icon-download"></use></svg></span>
+                      <span><strong>CSV 내보내기</strong><small>모든 거래를 파일로 저장</small></span>
+                      <svg aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                    </button>
+                    <button type="button" id="import-csv-button">
+                      <span><svg aria-hidden="true"><use href="#icon-upload"></use></svg></span>
+                      <span><strong>CSV 불러오기</strong><small>기존 거래에 파일 내용 추가</small></span>
+                      <svg aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                    </button>
+                    <input id="csv-file-input" type="file" accept=".csv,text/csv" hidden />
+                  </div>
+                  <div class="storage-status">
+                    <span><svg aria-hidden="true"><use href="#icon-shield-check"></use></svg></span>
+                      <div><strong>브라우저 저장 완료</strong><small id="storage-status-copy">거래 0건 · 자동 저장됨</small></div>
+                  </div>
+                  <div class="install-card" id="install-card">
+                    <span class="install-card-icon" aria-hidden="true"><svg><use href="#icon-device"></use></svg></span>
+                    <div><strong id="install-card-title">핸드폰에 앱 설치</strong><small id="install-status-copy">홈 화면에서 일반 앱처럼 바로 실행할 수 있어요.</small></div>
+                    <button class="small-button" id="install-app-button" type="button">설치</button>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <nav class="mobile-nav" aria-label="모바일 메뉴">
+          <button class="is-active" type="button" data-view-target="dashboard">
+            <svg aria-hidden="true"><use href="#icon-home"></use></svg><span>홈</span>
+          </button>
+          <button type="button" data-view-target="transactions">
+            <svg aria-hidden="true"><use href="#icon-receipt"></use></svg><span>거래</span>
+          </button>
+          <button class="mobile-add" type="button" data-open-transaction aria-label="거래 추가">
+            <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+          </button>
+          <button type="button" data-view-target="settings" data-focus-section="budget">
+            <svg aria-hidden="true"><use href="#icon-piggy"></use></svg><span>예산</span>
+          </button>
+          <button type="button" data-view-target="settings" data-focus-section="cloud">
+            <svg aria-hidden="true"><use href="#icon-users"></use></svg><span>공유</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <dialog class="modal onboarding-modal" id="onboarding-dialog">
+      <form method="dialog" id="onboarding-form">
+        <div class="onboarding-visual">
+          <div class="onboarding-logo">
+            <span class="brand-mark large" aria-hidden="true"><svg><use href="#icon-wallet"></use></svg></span>
+            <strong>Poundwise</strong>
+          </div>
+          <div class="visual-copy">
+            <span class="welcome-pill"><svg aria-hidden="true"><use href="#icon-sparkles"></use></svg> 영국 생활비, 더 가볍게</span>
+            <h2>파운드로 쓰고,<br />원화로도 바로 확인하세요.</h2>
+            <p>환율부터 하루 예산, 저축 목표까지 한 화면에서 관리할 수 있어요.</p>
+          </div>
+          <div class="visual-card balance-preview-card">
+            <small>하루 사용 가능 금액</small>
+            <strong>£24.80</strong>
+            <span>약 ₩45,900</span>
+            <div class="visual-card-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <span class="visual-decoration decoration-one" aria-hidden="true">£</span>
+          <span class="visual-decoration decoration-two" aria-hidden="true">₩</span>
+        </div>
+
+        <div class="onboarding-form-panel">
+          <div class="onboarding-progress"><span class="is-active"></span><span></span><span></span></div>
+          <div class="onboarding-heading">
+            <p class="eyebrow">WELCOME TO POUNDWISE</p>
+            <h1>첫 예산을 설정해 볼까요?</h1>
+            <p>현재 상황을 알려주시면 오늘부터 쓸 수 있는 금액을 바로 계산해 드릴게요.</p>
+          </div>
+
+          <div class="form-grid onboarding-grid">
+            <label class="form-field full-width">
+              <span>현재 가진 금액</span>
+              <span class="joined-inputs large-input">
+                <input id="onboarding-balance" name="initialBalance" type="number" min="0" step="0.01" placeholder="0.00" required />
+                <select id="onboarding-balance-currency" name="initialBalanceCurrency" aria-label="현재 가진 금액 통화">
+                  <option value="GBP">GBP £</option>
+                  <option value="KRW">KRW ₩</option>
+                </select>
+              </span>
+              <small class="field-help" id="onboarding-balance-preview">두 통화로 자동 환산해 드려요.</small>
+            </label>
+            <label class="form-field">
+              <span>다음 용돈일</span>
+              <span class="input-with-icon large-input">
+                <input id="onboarding-next-date" name="nextAllowanceDate" type="date" required />
+                <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
+              </span>
+            </label>
+            <label class="form-field">
+              <span>이번 주기 용돈/예산</span>
+              <span class="currency-input large-input">
+                <span>£</span>
+                <input id="onboarding-budget" name="cycleBudget" type="number" min="0" step="0.01" placeholder="1000" required />
+              </span>
+            </label>
+            <label class="form-field full-width">
+              <span>저축 목표</span>
+              <span class="joined-inputs large-input goal-inputs">
+                <select id="onboarding-savings-mode" name="savingsMode" aria-label="저축 목표 방식">
+                  <option value="amount">금액 £</option>
+                  <option value="rate">비율 %</option>
+                </select>
+                <input id="onboarding-savings-value" name="savingsValue" type="number" min="0" step="0.01" placeholder="200" required />
+              </span>
+            </label>
+          </div>
+
+          <div class="onboarding-tip">
+            <svg aria-hidden="true"><use href="#icon-lightbulb"></use></svg>
+            <p><strong>언제든 바꿀 수 있어요.</strong> 예산과 저축 현황은 설정에서 계속 업데이트할 수 있습니다.</p>
+          </div>
+
+          <button class="primary-button large-button" type="submit">
+            내 대시보드 시작하기
+            <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+          </button>
+          <p class="privacy-copy"><svg aria-hidden="true"><use href="#icon-lock"></use></svg> 입력한 정보는 이 브라우저 안에만 안전하게 저장됩니다.</p>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="modal transaction-modal" id="transaction-dialog">
+      <form method="dialog" id="transaction-form">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow" id="transaction-modal-eyebrow">NEW TRANSACTION</p>
+            <h2 id="transaction-modal-title">거래 추가</h2>
+            <p>파운드나 원화, 편한 통화로 기록하세요.</p>
+          </div>
+          <button class="icon-button" type="button" data-close-transaction aria-label="닫기">
+            <svg aria-hidden="true"><use href="#icon-close"></use></svg>
+          </button>
+        </div>
+
+        <input id="transaction-id" name="id" type="hidden" />
+        <div class="segmented-control transaction-type-control" role="group" aria-label="거래 유형">
+          <button class="is-active expense-option" type="button" data-transaction-type="expense">
+            <svg aria-hidden="true"><use href="#icon-trending-down"></use></svg>지출
+          </button>
+          <button class="income-option" type="button" data-transaction-type="income">
+            <svg aria-hidden="true"><use href="#icon-trending-up"></use></svg>수입
+          </button>
+        </div>
+        <input id="transaction-type" name="type" type="hidden" value="expense" />
+
+        <label class="form-field amount-field">
+          <span>금액</span>
+          <span class="joined-inputs amount-input-group">
+            <span class="amount-prefix" id="transaction-amount-prefix">£</span>
+            <input id="transaction-amount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" inputmode="decimal" required />
+            <select id="transaction-currency" name="currency" aria-label="통화">
+              <option value="GBP">GBP</option>
+              <option value="KRW">KRW</option>
+            </select>
+          </span>
+          <small class="conversion-preview" id="transaction-conversion-preview">환산 금액 ₩0</small>
+        </label>
+
+        <div class="form-grid two-columns">
+          <label class="form-field">
+            <span>날짜</span>
+            <span class="input-with-icon">
+              <input id="transaction-date" name="date" type="date" required />
+              <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
+            </span>
+          </label>
+          <label class="form-field">
+            <span>카테고리</span>
+            <span class="select-field">
+              <select id="transaction-category" name="category" required></select>
+              <svg aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+            </span>
+          </label>
+        </div>
+        <label class="form-field">
+          <span>메모 <small>(선택)</small></span>
+          <input id="transaction-memo" name="memo" type="text" maxlength="100" placeholder="예: Tesco 주간 장보기" />
+        </label>
+
+        <div class="modal-actions">
+          <button class="secondary-button" type="button" data-close-transaction>취소</button>
+          <button class="primary-button" type="submit" id="transaction-submit-button">거래 저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="modal confirm-modal" id="delete-dialog">
+      <form method="dialog" id="delete-form">
+        <span class="confirm-icon" aria-hidden="true"><svg><use href="#icon-trash"></use></svg></span>
+        <h2>이 거래를 삭제할까요?</h2>
+        <p>삭제한 거래는 다시 복구할 수 없습니다.</p>
+        <input id="delete-transaction-id" type="hidden" />
+        <div class="modal-actions centered-actions">
+          <button class="secondary-button" type="button" id="cancel-delete-button">취소</button>
+          <button class="danger-button" type="submit">삭제</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast-region" aria-live="polite" aria-atomic="true" id="toast-region"></div>
+
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="icon-wallet" viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H19a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12"/><path d="M20 10h-5a2 2 0 0 0 0 4h5"/><circle cx="15" cy="12" r=".5"/></symbol>
+      <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></symbol>
+      <symbol id="icon-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+      <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.08A1.7 1.7 0 0 0 8.55 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.18 15a1.7 1.7 0 0 0-1.52-1H2.6v-4h.08A1.7 1.7 0 0 0 4.2 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8.6 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.08A1.7 1.7 0 0 0 15.05 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.42 9a1.7 1.7 0 0 0 1.52 1H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></symbol>
+      <symbol id="icon-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.1 3.1L16 7.5l-2.9 1.4L12 12l-1.1-3.1L8 7.5l2.9-1.4L12 3Z"/><path d="m5 13 .8 2.2L8 16l-2.2.8L5 19l-.8-2.2L2 16l2.2-.8L5 13ZM19 12l.8 2.2 2.2.8-2.2.8L19 18l-.8-2.2L16 15l2.2-.8L19 12Z"/></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M19 11a7 7 0 1 0 1 4"/></symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+      <symbol id="icon-coins" viewBox="0 0 24 24"><ellipse cx="9" cy="6" rx="6" ry="3"/><path d="M3 6v4c0 1.7 2.7 3 6 3s6-1.3 6-3V6"/><path d="M3 10v4c0 1.7 2.7 3 6 3 1.2 0 2.3-.2 3.2-.5"/><path d="M3 14v4c0 1.7 2.7 3 6 3 1.5 0 2.8-.3 3.9-.8"/><ellipse cx="17" cy="15" rx="4" ry="2"/><path d="M13 15v4c0 1.1 1.8 2 4 2s4-.9 4-2v-4"/></symbol>
+      <symbol id="icon-calendar-heart" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 9h18"/><path d="M12 17s-3-1.6-3-3.4c0-1.6 2.1-2.1 3-.8.9-1.3 3-.8 3 .8 0 1.8-3 3.4-3 3.4Z"/></symbol>
+      <symbol id="icon-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></symbol>
+      <symbol id="icon-week" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01"/></symbol>
+      <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+      <symbol id="icon-piggy" viewBox="0 0 24 24"><path d="M19 9c1.2.6 2 1.8 2 3v3h-2l-1 3h-3l-.6-2H9.6L9 18H6l-.9-3A6 6 0 0 1 4 11.5C4 8.5 6.7 6 10 6h3c2.5 0 4.7 1.3 5.8 3"/><path d="M8 6V4c2 0 3.3.7 4 2M16 10h.01M4 10H2"/></symbol>
+      <symbol id="icon-sliders" viewBox="0 0 24 24"><path d="M4 6h6M14 6h6M4 12h10M18 12h2M4 18h2M10 18h10"/><circle cx="12" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12l2 2 4-4"/></symbol>
+      <symbol id="icon-trending-up" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+      <symbol id="icon-trending-down" viewBox="0 0 24 24"><path d="m3 7 6 6 4-4 8 8"/><path d="M15 17h6v-6"/></symbol>
+      <symbol id="icon-scale" viewBox="0 0 24 24"><path d="M12 3v18M5 6h14M5 6l-3 7h6L5 6ZM19 6l-3 7h6l-3-7ZM8 21h8"/></symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+      <symbol id="icon-chevron-down" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+      <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+      <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></symbol>
+      <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+      <symbol id="icon-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 17V5M7 10l5-5 5 5M4 21h16"/></symbol>
+      <symbol id="icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="icon-shield-check" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></symbol>
+      <symbol id="icon-lightbulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M8.5 15.5A7 7 0 1 1 15.5 15.5 4 4 0 0 0 14 18h-4a4 4 0 0 0-1.5-2.5Z"/></symbol>
+      <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+      <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+      <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4L16.5 3.5Z"/></symbol>
+      <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></symbol>
+      <symbol id="icon-cloud" viewBox="0 0 24 24"><path d="M17.5 19H7a5 5 0 1 1 1-9.9A7 7 0 0 1 21 12.5 3.5 3.5 0 0 1 17.5 19Z"/><path d="m9 15 3-3 3 3M12 12v7"/></symbol>
+      <symbol id="icon-device" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 5h4M11 18h2"/></symbol>
+      <symbol id="icon-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+      <symbol id="icon-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l3 3"/></symbol>
+      <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+      <symbol id="icon-log-out" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></symbol>
+    </svg>
+
+    <script src="./cloud-config.js" defer></script>
+    <script src="./app.js" defer></script>
+    <script src="./cloud-sync.js" defer></script>
+  </body>
+</html>

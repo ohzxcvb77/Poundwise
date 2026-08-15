@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Poundwise">
+  <rect width="512" height="512" rx="116" fill="#102d2a"/>
+  <circle cx="408" cy="82" r="132" fill="#173d38"/>
+  <circle cx="84" cy="448" r="116" fill="#0c2623"/>
+  <rect x="104" y="114" width="304" height="284" rx="76" fill="#74d3b4"/>
+  <path d="M180 210c0-27 22-49 49-49h99c9 0 16 7 16 16v31H229c-10 0-18 8-18 18v82c0 10 8 18 18 18h115v9c0 9-7 16-16 16h-99c-27 0-49-22-49-49v-92Z" fill="#102d2a"/>
+  <path d="M211 229c0-12 10-22 22-22h116c13 0 23 10 23 23v73c0 13-10 23-23 23H233c-12 0-22-10-22-22v-75Z" fill="#e7faf4"/>
+  <circle cx="329" cy="267" r="15" fill="#23886d"/>
+  <path d="M132 174c0-15 12-27 27-27h20v54h-20c-15 0-27-12-27-27Z" fill="#e7faf4" opacity=".9"/>
+</svg>

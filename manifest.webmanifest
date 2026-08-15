@@ -1,0 +1,41 @@
+{
+  "name": "Poundwise · 가족 가계부",
+  "short_name": "Poundwise",
+  "description": "GBP와 KRW를 함께 관리하는 영국 생활 가족 가계부",
+  "lang": "ko-KR",
+  "start_url": "./index.html#dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#edf3f1",
+  "theme_color": "#102d2a",
+  "categories": ["finance", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "./app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "거래 추가",
+      "short_name": "거래 추가",
+      "url": "./index.html#transactions",
+      "icons": [{ "src": "./app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "가족 공유 설정",
+      "short_name": "가족 공유",
+      "url": "./index.html#settings",
+      "icons": [{ "src": "./app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
