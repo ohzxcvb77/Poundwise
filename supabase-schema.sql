@@ -247,6 +247,57 @@ begin
 end;
 $$;
 
+create or replace function public.poundwise_get_or_create_personal_household(
+  p_display_name text
+)
+returns table (
+  household_id uuid,
+  household_name text,
+  invite_code text,
+  member_role text,
+  display_name text
+)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  current_user_id uuid := (select auth.uid());
+  created_household public.poundwise_households;
+begin
+  if current_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+  if char_length(trim(p_display_name)) not between 1 and 30 then
+    raise exception 'Invalid display name';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(current_user_id::text, 0));
+
+  return query
+  select household.id, household.name, household.invite_code, member.role, member.display_name
+  from public.poundwise_household_members member
+  join public.poundwise_households household on household.id = member.household_id
+  where member.user_id = current_user_id
+  order by member.joined_at asc
+  limit 1;
+
+  if found then
+    return;
+  end if;
+
+  insert into public.poundwise_households (name, owner_id)
+  values ('내 가계부', current_user_id)
+  returning * into created_household;
+
+  insert into public.poundwise_household_members (household_id, user_id, role, display_name)
+  values (created_household.id, current_user_id, 'owner', trim(p_display_name));
+
+  return query
+  select created_household.id, created_household.name, created_household.invite_code, 'owner'::text, trim(p_display_name);
+end;
+$$;
+
 create or replace function public.poundwise_get_my_households()
 returns table (
   household_id uuid,
@@ -289,6 +340,7 @@ revoke all on function public.poundwise_is_member(uuid) from public;
 revoke all on function public.poundwise_is_owner(uuid) from public;
 revoke all on function public.poundwise_create_household(text, text) from public;
 revoke all on function public.poundwise_join_household_by_code(text, text) from public;
+revoke all on function public.poundwise_get_or_create_personal_household(text) from public;
 revoke all on function public.poundwise_get_my_households() from public;
 revoke all on function public.poundwise_rotate_invite_code(uuid) from public;
 
@@ -296,6 +348,7 @@ grant execute on function public.poundwise_is_member(uuid) to authenticated;
 grant execute on function public.poundwise_is_owner(uuid) to authenticated;
 grant execute on function public.poundwise_create_household(text, text) to authenticated;
 grant execute on function public.poundwise_join_household_by_code(text, text) to authenticated;
+grant execute on function public.poundwise_get_or_create_personal_household(text) to authenticated;
 grant execute on function public.poundwise_get_my_households() to authenticated;
 grant execute on function public.poundwise_rotate_invite_code(uuid) to authenticated;
 

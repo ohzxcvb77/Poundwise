@@ -472,8 +472,8 @@
                   <div class="settings-card-heading compact-heading">
                     <span class="settings-heading-icon mint-icon" aria-hidden="true"><svg><use href="#icon-cloud"></use></svg></span>
                     <div>
-                      <h2>가족 공유 · 기기 동기화</h2>
-                      <p>가족과 같은 가계부를 사용하고 모든 기기에서 이어서 기록합니다.</p>
+                      <h2>계정 · 가족 공유 · 기기 동기화</h2>
+                      <p>내 계정으로 모든 기기에서 이어서 쓰고, 원하면 가족도 초대합니다.</p>
                     </div>
                   </div>
 
@@ -495,20 +495,20 @@
                       <button class="is-active" type="button" data-cloud-auth-mode="signin">로그인</button>
                       <button type="button" data-cloud-auth-mode="signup">회원가입</button>
                     </div>
-                    <form id="cloud-auth-form" class="cloud-form">
-                      <label class="form-field" id="cloud-display-name-field" hidden>
+                    <form id="cloud-auth-form" class="cloud-form" data-auth-form>
+                      <label class="form-field" id="cloud-display-name-field" data-auth-display-name-field hidden>
                         <span>표시 이름</span>
-                        <input id="cloud-display-name" type="text" maxlength="30" autocomplete="name" placeholder="예: 민지" />
+                        <input id="cloud-display-name" data-auth-display-name type="text" maxlength="30" autocomplete="name" placeholder="예: 민지" />
                       </label>
                       <label class="form-field">
                         <span>이메일</span>
-                        <input id="cloud-email" type="email" autocomplete="email" placeholder="name@example.com" required />
+                        <input id="cloud-email" data-auth-email type="email" autocomplete="email" placeholder="name@example.com" required />
                       </label>
                       <label class="form-field">
                         <span>비밀번호</span>
-                        <input id="cloud-password" type="password" minlength="8" autocomplete="current-password" placeholder="8자 이상" required />
+                        <input id="cloud-password" data-auth-password type="password" minlength="8" autocomplete="current-password" placeholder="8자 이상" required />
                       </label>
-                      <button class="primary-button full-button" id="cloud-auth-submit" type="submit">로그인</button>
+                      <button class="primary-button full-button" id="cloud-auth-submit" data-auth-submit type="submit">로그인</button>
                     </form>
                   </div>
 
@@ -532,16 +532,16 @@
                       <button class="primary-button full-button full-span" type="submit">가족 가계부 만들기</button>
                     </form>
                     <div class="cloud-or"><span>또는</span></div>
-                    <form id="join-household-form" class="cloud-action-box compact-action-box">
+                    <form id="join-household-form" class="cloud-action-box compact-action-box" data-household-join-form>
                       <span class="cloud-action-icon blue-icon" aria-hidden="true"><svg><use href="#icon-key"></use></svg></span>
                       <div class="cloud-action-copy"><strong>초대 코드로 참여</strong><small>가족 데이터와 이 기기의 거래를 합칩니다.</small></div>
                       <label class="form-field full-span">
                         <span>8자리 초대 코드</span>
-                        <input id="household-invite-code-input" class="invite-code-input" type="text" maxlength="8" autocomplete="off" placeholder="AB12CD34" required />
+                        <input id="household-invite-code-input" class="invite-code-input" data-household-invite-code type="text" maxlength="8" autocomplete="off" placeholder="AB12CD34" required />
                       </label>
                       <label class="form-field full-span">
                         <span>내 표시 이름</span>
-                        <input id="join-household-display-name" type="text" maxlength="30" placeholder="예: 준호" required />
+                        <input id="join-household-display-name" data-household-display-name type="text" maxlength="30" placeholder="예: 준호" required />
                       </label>
                       <button class="secondary-button full-button full-span" type="submit">가족 가계부 참여하기</button>
                     </form>
@@ -561,6 +561,21 @@
                       <div class="member-section-head"><strong>함께 쓰는 사람</strong><small id="cloud-member-count">0명</small></div>
                       <div class="member-list" id="cloud-member-list"></div>
                     </div>
+                    <details class="cloud-config-details family-join-details">
+                      <summary>다른 가족의 초대 코드로 참여</summary>
+                      <form class="cloud-form config-form" data-household-join-form>
+                        <label class="form-field">
+                          <span>8자리 초대 코드</span>
+                          <input class="invite-code-input" data-household-invite-code type="text" maxlength="8" autocomplete="off" placeholder="AB12CD34" required />
+                        </label>
+                        <label class="form-field">
+                          <span>내 표시 이름</span>
+                          <input data-household-display-name type="text" maxlength="30" autocomplete="name" placeholder="예: 준호" required />
+                        </label>
+                        <p class="config-warning"><svg><use href="#icon-info"></use></svg>참여하면 이 기기에는 해당 가족 가계부가 표시됩니다.</p>
+                        <button class="secondary-button full-button" type="submit">가족 가계부 참여하기</button>
+                      </form>
+                    </details>
                     <div class="sync-status-row">
                       <span class="sync-icon" id="cloud-sync-icon" aria-hidden="true"><svg><use href="#icon-refresh"></use></svg></span>
                       <div><strong id="cloud-sync-title">동기화 준비됨</strong><small id="cloud-last-sync">아직 동기화하지 않았어요.</small></div>
@@ -685,6 +700,80 @@
       </div>
     </div>
 
+    <dialog class="modal auth-gate-modal" id="auth-gate-dialog" aria-labelledby="auth-gate-title">
+      <div class="auth-gate-shell">
+        <section class="auth-gate-visual">
+          <div class="onboarding-logo">
+            <span class="brand-mark large" aria-hidden="true"><svg><use href="#icon-wallet"></use></svg></span>
+            <strong>Poundwise</strong>
+          </div>
+          <div class="auth-gate-visual-copy">
+            <span class="welcome-pill"><svg aria-hidden="true"><use href="#icon-cloud"></use></svg> ONE ACCOUNT · EVERY DEVICE</span>
+            <h2>어느 기기에서든<br />내 가계부 그대로.</h2>
+            <p>휴대폰, 태블릿, 컴퓨터에서 같은 계정으로 로그인하면 거래와 예산이 자동으로 이어집니다.</p>
+          </div>
+          <div class="auth-device-stack" aria-hidden="true">
+            <span><svg><use href="#icon-device"></use></svg><i></i></span>
+            <b><svg><use href="#icon-cloud"></use></svg></b>
+            <span class="wide-device"><svg><use href="#icon-database"></use></svg><i></i></span>
+          </div>
+          <div class="auth-feature-list">
+            <span><svg aria-hidden="true"><use href="#icon-shield-check"></use></svg> 계정별 안전한 데이터 분리</span>
+            <span><svg aria-hidden="true"><use href="#icon-refresh"></use></svg> 변경 사항 자동 동기화</span>
+          </div>
+        </section>
+
+        <section class="auth-gate-panel">
+          <div class="auth-gate-heading">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h1 id="auth-gate-title">내 가계부에 로그인</h1>
+            <p>입력했던 거래와 예산을 불러오려면 계정으로 시작하세요.</p>
+          </div>
+
+          <div class="auth-gate-loading" id="auth-gate-loading-view">
+            <span class="auth-spinner" aria-hidden="true"></span>
+            <strong id="auth-gate-loading-title">로그인 상태 확인 중</strong>
+            <p id="auth-gate-loading-copy">내 가계부를 안전하게 준비하고 있어요.</p>
+          </div>
+
+          <div class="auth-gate-form-view" id="auth-gate-form-view" hidden>
+            <div class="segmented-control cloud-auth-mode" role="group" aria-label="시작 방법">
+              <button class="is-active" type="button" data-cloud-auth-mode="signin">로그인</button>
+              <button type="button" data-cloud-auth-mode="signup">처음 사용하기</button>
+            </div>
+            <form class="cloud-form auth-gate-form" id="auth-gate-form" data-auth-form>
+              <label class="form-field" data-auth-display-name-field hidden>
+                <span>표시 이름</span>
+                <input data-auth-display-name type="text" maxlength="30" autocomplete="name" placeholder="예: 민지" />
+              </label>
+              <label class="form-field">
+                <span>이메일</span>
+                <input data-auth-email type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" required />
+              </label>
+              <label class="form-field">
+                <span>비밀번호</span>
+                <input data-auth-password type="password" minlength="8" autocomplete="current-password" placeholder="8자 이상" required />
+              </label>
+              <button class="primary-button large-button full-button" data-auth-submit type="submit">로그인</button>
+            </form>
+            <p class="auth-gate-status" id="auth-gate-status" aria-live="polite"></p>
+          </div>
+
+          <div class="auth-gate-config-view" id="auth-gate-config-view" hidden>
+            <span class="auth-config-icon" aria-hidden="true"><svg><use href="#icon-cloud"></use></svg></span>
+            <strong>로그인 서버를 준비하지 못했어요</strong>
+            <p id="auth-gate-config-copy">잠시 후 다시 시도해 주세요.</p>
+          </div>
+
+          <div class="auth-gate-secondary-actions">
+            <button class="secondary-button" id="auth-gate-retry-button" type="button" hidden>다시 시도</button>
+            <button class="text-button" id="auth-gate-offline-button" type="button" hidden>오프라인으로 계속</button>
+          </div>
+          <p class="auth-security-copy"><svg aria-hidden="true"><use href="#icon-lock"></use></svg> 로그인 정보는 인증 서비스에서 안전하게 처리됩니다.</p>
+        </section>
+      </div>
+    </dialog>
+
     <dialog class="modal onboarding-modal" id="onboarding-dialog">
       <form method="dialog" id="onboarding-form">
         <div class="onboarding-visual">
@@ -762,7 +851,7 @@
             내 대시보드 시작하기
             <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
           </button>
-          <p class="privacy-copy"><svg aria-hidden="true"><use href="#icon-lock"></use></svg> 입력한 정보는 이 브라우저 안에만 안전하게 저장됩니다.</p>
+          <p class="privacy-copy"><svg aria-hidden="true"><use href="#icon-lock"></use></svg> 입력한 정보는 이 기기에 저장되고 로그인한 계정으로 동기화됩니다.</p>
         </div>
       </form>
     </dialog>

@@ -1,6 +1,7 @@
 "use strict";
 
-const STORAGE_KEY = "poundwise_state_v1";
+const LEGACY_STORAGE_KEY = "poundwise_state_v1";
+const ACTIVE_STORAGE_KEY = "poundwise_active_state_key_v1";
 const RATE_CACHE_KEY = "poundwise_rate_cache_v1";
 const EXCHANGE_API_URL = "https://api.frankfurter.dev/v2/rate/GBP/KRW";
 const RATE_REFRESH_INTERVAL = 30 * 60 * 1000;
@@ -25,7 +26,8 @@ const CHART_COLORS = ["#3b9b7b", "#7089ca", "#e28a72", "#b276ad", "#d4a13d", "#4
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
-let state = loadState();
+let activeStateStorageKey = localStorage.getItem(ACTIVE_STORAGE_KEY) || LEGACY_STORAGE_KEY;
+let state = loadState(activeStateStorageKey);
 let currentRate = loadInitialRate();
 let rateRequestInProgress = false;
 let settingsFormDirty = false;
@@ -63,11 +65,11 @@ function createDefaultState() {
   };
 }
 
-function loadState() {
+function loadState(storageKey = activeStateStorageKey) {
   const defaults = createDefaultState();
 
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = JSON.parse(localStorage.getItem(storageKey));
     if (!saved || typeof saved !== "object") return defaults;
 
     return {
@@ -86,7 +88,7 @@ function loadState() {
 
 function persistState() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(activeStateStorageKey, JSON.stringify(state));
     return true;
   } catch (error) {
     console.error("데이터 저장에 실패했습니다.", error);
@@ -95,8 +97,53 @@ function persistState() {
   }
 }
 
+function activateAccountState(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) return { changed: false, hadCachedState: false, migratedLocalState: false };
+
+  const accountStorageKey = `${LEGACY_STORAGE_KEY}_account_${normalizedUserId}`;
+  if (activeStateStorageKey === accountStorageKey) {
+    return { changed: false, hadCachedState: true, migratedLocalState: false };
+  }
+
+  const hadCachedState = localStorage.getItem(accountStorageKey) !== null;
+  const currentOwnerId = state.cloud?.userId || null;
+  const migratedLocalState = !hadCachedState
+    && activeStateStorageKey === LEGACY_STORAGE_KEY
+    && (!currentOwnerId || currentOwnerId === normalizedUserId);
+  const nextState = hadCachedState
+    ? loadState(accountStorageKey)
+    : migratedLocalState
+      ? state
+      : createDefaultState();
+
+  activeStateStorageKey = accountStorageKey;
+  localStorage.setItem(ACTIVE_STORAGE_KEY, activeStateStorageKey);
+  state = {
+    ...nextState,
+    cloud: {
+      ...createDefaultState().cloud,
+      ...(nextState.cloud || {}),
+      userId: normalizedUserId,
+    },
+  };
+  settingsSavingsMode = state.settings.savingsMode;
+  persistState();
+  renderAll();
+
+  return { changed: true, hadCachedState, migratedLocalState };
+}
+
 function queueCloudSync() {
   window.PoundwiseCloud?.queueSync();
+}
+
+function openOnboardingIfNeeded() {
+  const dialog = $("#onboarding-dialog");
+  if (!state.onboardingComplete && dialog && !dialog.open) {
+    prepareOnboarding();
+    dialog.showModal();
+  }
 }
 
 function readRateCache() {
@@ -1264,14 +1311,14 @@ function initialize() {
   const initialView = location.hash.replace("#", "");
   showView(["dashboard", "transactions", "settings"].includes(initialView) ? initialView : "dashboard");
 
-  if (!state.onboardingComplete) {
-    $("#onboarding-dialog").showModal();
-  }
-
   if (state.settings.rateMode === "auto") fetchExchangeRate();
   window.setInterval(() => {
     if (!document.hidden && state.settings.rateMode === "auto") fetchExchangeRate();
   }, RATE_REFRESH_INTERVAL);
 }
 
+window.PoundwiseApp = {
+  activateAccountState,
+  openOnboardingIfNeeded,
+};
 initialize();

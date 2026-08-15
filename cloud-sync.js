@@ -86,6 +86,7 @@
     if (/email not confirmed/i.test(message)) return "이메일 인증을 먼저 완료해 주세요.";
     if (/user already registered/i.test(message)) return "이미 가입된 이메일이에요.";
     if (/invalid.*invite|invite.*not found|초대/i.test(message)) return "초대 코드를 확인해 주세요.";
+    if (/poundwise_get_or_create_personal_household|function.*does not exist/i.test(message)) return "로그인 데이터베이스 설정을 업데이트해야 해요.";
     if (/failed to fetch|network|load failed/i.test(message)) return "인터넷 연결 또는 Supabase 설정을 확인해 주세요.";
     if (/row-level security|permission|policy/i.test(message)) return "공유 권한 설정을 확인해 주세요. 제공된 SQL을 먼저 실행해야 합니다.";
     return message;
@@ -106,6 +107,40 @@
   function setCloudView(selector, visible) {
     const element = $(selector);
     if (element) element.hidden = !visible;
+  }
+
+  function setAuthGateStatus(message = "", isError = false) {
+    const status = $("#auth-gate-status");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("is-error", isError);
+  }
+
+  function showAuthGate(view = "loading", options = {}) {
+    const dialog = $("#auth-gate-dialog");
+    if (!dialog) return;
+    const loading = view === "loading";
+    const form = view === "form";
+    const error = view === "error";
+    $("#auth-gate-loading-view").hidden = !loading;
+    $("#auth-gate-form-view").hidden = !form;
+    $("#auth-gate-config-view").hidden = !error;
+    $("#auth-gate-retry-button").hidden = !error;
+    $("#auth-gate-offline-button").hidden = !(error && cloudSession?.user);
+    if (loading) {
+      setText("#auth-gate-loading-title", options.title || "로그인 상태 확인 중");
+      setText("#auth-gate-loading-copy", options.message || "내 가계부를 안전하게 준비하고 있어요.");
+    }
+    if (error) {
+      setText("#auth-gate-config-copy", options.message || "인터넷 연결을 확인하고 다시 시도해 주세요.");
+    }
+    if (form) setAuthGateStatus(options.message || "");
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function hideAuthGate() {
+    const dialog = $("#auth-gate-dialog");
+    if (dialog?.open) dialog.close();
   }
 
   function renderCloudUI() {
@@ -148,7 +183,7 @@
       pillLabel = cloudSession.user.email || "계정 연결됨";
       pillStatus = "가족 선택 필요";
     } else if (connected) {
-      title = offline ? "오프라인 저장 중" : cloudSyncInProgress ? "동기화 중" : "가족 공유 중";
+      title = offline ? "오프라인 저장 중" : cloudSyncInProgress ? "동기화 중" : cloudMembers.length > 1 ? "가족 공유 중" : "기기 동기화 중";
       copy = offline
         ? "변경 사항은 연결이 돌아오면 자동으로 합쳐집니다."
         : cloudStatusMessage || `${state.cloud.householdName || "가족 가계부"}와 연결되어 있어요.`;
@@ -205,7 +240,7 @@
   function renderSyncStatus() {
     const icon = $("#cloud-sync-icon");
     icon?.classList.toggle("is-syncing", cloudSyncInProgress);
-    setText("#cloud-sync-title", !navigator.onLine ? "오프라인 변경 저장됨" : cloudSyncInProgress ? "가족 데이터 합치는 중" : cloudStatus === "error" ? "동기화 확인 필요" : "모든 기기와 동기화됨");
+    setText("#cloud-sync-title", !navigator.onLine ? "오프라인 변경 저장됨" : cloudSyncInProgress ? "가계부 데이터 합치는 중" : cloudStatus === "error" ? "동기화 확인 필요" : "모든 기기와 동기화됨");
     let lastSync = "아직 동기화하지 않았어요.";
     if (state.cloud?.lastSyncedAt) {
       lastSync = `${new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(state.cloud.lastSyncedAt))} 마지막 동기화`;
@@ -216,10 +251,19 @@
   function updateAuthMode(mode) {
     cloudAuthMode = mode === "signup" ? "signup" : "signin";
     $$('[data-cloud-auth-mode]').forEach((button) => button.classList.toggle("is-active", button.dataset.cloudAuthMode === cloudAuthMode));
-    $("#cloud-display-name-field").hidden = cloudAuthMode !== "signup";
-    $("#cloud-display-name").required = cloudAuthMode === "signup";
-    $("#cloud-password").autocomplete = cloudAuthMode === "signup" ? "new-password" : "current-password";
-    setText("#cloud-auth-submit", cloudAuthMode === "signup" ? "계정 만들기" : "로그인");
+    $$('[data-auth-display-name-field]').forEach((field) => {
+      field.hidden = cloudAuthMode !== "signup";
+    });
+    $$('[data-auth-display-name]').forEach((input) => {
+      input.required = cloudAuthMode === "signup";
+    });
+    $$('[data-auth-password]').forEach((input) => {
+      input.autocomplete = cloudAuthMode === "signup" ? "new-password" : "current-password";
+    });
+    $$('[data-auth-submit]').forEach((button) => {
+      button.textContent = cloudAuthMode === "signup" ? "계정 만들기" : "로그인";
+    });
+    setAuthGateStatus();
   }
 
   async function createClientFromConfig() {
@@ -246,10 +290,12 @@
     cloudMembers = [];
 
     if (!hasCloudConfig()) {
+      showAuthGate("error", { message: "로그인 서버 연결 정보가 아직 설정되지 않았어요." });
       setCloudStatus("local");
       return;
     }
 
+    showAuthGate("loading");
     setCloudStatus("loading");
     try {
       cloudClient = await createClientFromConfig();
@@ -259,17 +305,22 @@
 
       const { data: authListener } = cloudClient.auth.onAuthStateChange((_event, session) => {
         cloudSession = session;
-        window.setTimeout(() => handleAuthState(), 0);
+        window.setTimeout(() => handleAuthState().catch(handleCloudFailure), 0);
       });
       cloudAuthSubscription = authListener.subscription;
 
       await handleAuthState();
     } catch (error) {
-      const message = normalizeCloudError(error);
-      state.cloud.lastError = message;
-      persistState();
-      setCloudStatus("error", message);
+      handleCloudFailure(error);
     }
+  }
+
+  function handleCloudFailure(error) {
+    const message = normalizeCloudError(error);
+    state.cloud.lastError = message;
+    persistState();
+    setCloudStatus("error", message);
+    showAuthGate("error", { message });
   }
 
   async function handleAuthState() {
@@ -277,22 +328,50 @@
       await removeCloudChannel();
       cloudMembers = [];
       setCloudStatus("ready");
+      showAuthGate("form");
       return;
     }
 
-    state.cloud.userId = cloudSession.user.id;
+    const expectedUserId = cloudSession.user.id;
+    showAuthGate("loading", { title: "내 가계부 불러오는 중", message: "최근 거래와 예산을 모든 기기에서 맞추고 있어요." });
+    window.PoundwiseApp?.activateAccountState(expectedUserId);
+    state.cloud.userId = expectedUserId;
     persistState();
-    const householdChange = await loadActiveHousehold();
+    let householdChange = await loadActiveHousehold();
+    if (!state.cloud.householdId) {
+      householdChange = await ensurePersonalHousehold();
+    }
     if (state.cloud.householdId) {
       await subscribeToHousehold();
-      await syncNow({
+      const synced = await syncNow({
         silent: true,
         preferRemoteSettings: householdChange.changed,
         preferRemoteTransactions: householdChange.switched,
       });
+      if (!synced && navigator.onLine) return;
     } else {
       setCloudStatus("ready");
     }
+    if (cloudSession?.user?.id !== expectedUserId) return;
+    hideAuthGate();
+    window.PoundwiseApp?.openOnboardingIfNeeded();
+  }
+
+  async function ensurePersonalHousehold() {
+    const previousHouseholdId = state.cloud.householdId;
+    const metadata = cloudSession.user.user_metadata || {};
+    const emailName = String(cloudSession.user.email || "사용자").split("@")[0];
+    const displayName = String(metadata.display_name || metadata.name || metadata.full_name || emailName || "사용자").trim().slice(0, 30);
+    const { data, error } = await cloudClient.rpc("poundwise_get_or_create_personal_household", {
+      p_display_name: displayName,
+    });
+    if (error) throw error;
+    applyHouseholdResult(data);
+    await loadMembers();
+    return {
+      changed: previousHouseholdId !== state.cloud.householdId,
+      switched: Boolean(previousHouseholdId && previousHouseholdId !== state.cloud.householdId),
+    };
   }
 
   async function loadActiveHousehold() {
@@ -351,30 +430,43 @@
     if (!cloudClient) return;
     const form = event.currentTarget;
     if (!form.reportValidity()) return;
-    const button = $("#cloud-auth-submit");
+    const button = form.querySelector("[data-auth-submit]");
     setButtonBusy(button, true, cloudAuthMode === "signup" ? "계정 만드는 중…" : "로그인 중…");
+    setAuthGateStatus(cloudAuthMode === "signup" ? "안전한 계정을 만들고 있어요…" : "계정을 확인하고 있어요…");
 
     try {
-      const email = $("#cloud-email").value.trim();
-      const password = $("#cloud-password").value;
+      const email = form.querySelector("[data-auth-email]").value.trim();
+      const password = form.querySelector("[data-auth-password]").value;
       if (cloudAuthMode === "signup") {
-        const displayName = $("#cloud-display-name").value.trim();
+        const displayName = form.querySelector("[data-auth-display-name]").value.trim();
         const { data, error } = await cloudClient.auth.signUp({
           email,
           password,
-          options: { data: { display_name: displayName } },
+          options: {
+            data: { display_name: displayName },
+            emailRedirectTo: `${location.origin}${location.pathname}`,
+          },
         });
         if (error) throw error;
-        if (!data.session) showToast("가입 확인 메일을 보냈어요. 이메일 인증 후 로그인해 주세요.");
-        else showToast("계정을 만들고 로그인했어요.");
+        if (!data.session) {
+          const message = "가입 확인 메일을 보냈어요. 이메일 인증 후 로그인해 주세요.";
+          setAuthGateStatus(message);
+          showToast(message);
+        } else {
+          showToast("계정을 만들고 로그인했어요.");
+        }
       } else {
         const { error } = await cloudClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
         showToast("클라우드 계정에 로그인했어요.");
       }
-      $("#cloud-password").value = "";
+      $$('[data-auth-password]').forEach((input) => {
+        input.value = "";
+      });
     } catch (error) {
-      showToast(normalizeCloudError(error), "error");
+      const message = normalizeCloudError(error);
+      setAuthGateStatus(message, true);
+      showToast(message, "error");
     } finally {
       setButtonBusy(button, false);
       updateAuthMode(cloudAuthMode);
@@ -422,14 +514,15 @@
 
   async function handleJoinHousehold(event) {
     event.preventDefault();
-    if (!event.currentTarget.reportValidity() || !cloudClient) return;
-    const button = event.currentTarget.querySelector('button[type="submit"]');
+    const form = event.currentTarget;
+    if (!form.reportValidity() || !cloudClient) return;
+    const button = form.querySelector('button[type="submit"]');
     const previousHouseholdId = state.cloud.householdId;
     setButtonBusy(button, true, "참여하는 중…");
     try {
       const { data, error } = await cloudClient.rpc("poundwise_join_household_by_code", {
-        p_invite_code: $("#household-invite-code-input").value.trim().toUpperCase(),
-        p_display_name: $("#join-household-display-name").value.trim(),
+        p_invite_code: form.querySelector("[data-household-invite-code]").value.trim().toUpperCase(),
+        p_display_name: form.querySelector("[data-household-display-name]").value.trim(),
       });
       if (error) throw error;
       applyHouseholdResult(data);
@@ -440,8 +533,9 @@
         preferRemoteSettings: householdChanged,
         preferRemoteTransactions: Boolean(previousHouseholdId && householdChanged),
       });
-      event.currentTarget.reset();
-      showToast("가족 가계부에 참여하고 데이터를 합쳤어요.");
+      form.reset();
+      form.closest("details")?.removeAttribute("open");
+      showToast("가족 가계부에 참여하고 데이터를 불러왔어요.");
     } catch (error) {
       showToast(normalizeCloudError(error), "error");
     } finally {
@@ -450,7 +544,10 @@
   }
 
   function sharedSettingsPayload() {
-    return Object.fromEntries(SHARED_SETTING_KEYS.map((key) => [key, state.settings[key]]));
+    return {
+      ...Object.fromEntries(SHARED_SETTING_KEYS.map((key) => [key, state.settings[key]])),
+      onboardingComplete: state.onboardingComplete,
+    };
   }
 
   function transactionToCloudRow(transaction, deletedAt = null) {
@@ -512,7 +609,7 @@
   async function pushNewerLocalChanges(remote, options = {}) {
     const localSettingsTime = timestamp(state.settings.updatedAt);
     const remoteSettingsTime = timestamp(remote.settings?.updated_at);
-    if (!remote.settings || (!options.preferRemoteSettings && localSettingsTime > remoteSettingsTime)) {
+    if (state.onboardingComplete && (!remote.settings || (!options.preferRemoteSettings && localSettingsTime > remoteSettingsTime))) {
       const { error } = await cloudClient.from("poundwise_household_settings").upsert({
         household_id: state.cloud.householdId,
         settings: sharedSettingsPayload(),
@@ -554,6 +651,9 @@
           .map((key) => [key, remote.settings.settings[key]]),
       );
       state.settings = { ...state.settings, ...shared, updatedAt: remote.settings.updated_at };
+      state.onboardingComplete = remote.settings.settings.onboardingComplete === undefined
+        ? true
+        : Boolean(remote.settings.settings.onboardingComplete);
     }
 
     state.transactions = remote.transactions
@@ -568,14 +668,14 @@
   }
 
   async function syncNow(options = {}) {
-    if (cloudSyncInProgress || !cloudClient || !cloudSession?.user || !state.cloud?.householdId) return;
+    if (cloudSyncInProgress || !cloudClient || !cloudSession?.user || !state.cloud?.householdId) return false;
     if (!navigator.onLine) {
       setCloudStatus("ready", "오프라인 변경을 이 기기에 저장했어요.");
-      return;
+      return true;
     }
 
     cloudSyncInProgress = true;
-    setCloudStatus("syncing", "가족 데이터와 변경 사항을 합치고 있어요.");
+    setCloudStatus("syncing", "가계부 데이터와 변경 사항을 합치고 있어요.");
     try {
       const remoteBefore = await fetchRemoteState();
       await pushNewerLocalChanges(remoteBefore, options);
@@ -584,13 +684,16 @@
       applyCanonicalRemoteState(canonical);
       await loadMembers();
       setCloudStatus("connected", "모든 변경 사항이 동기화됐어요.");
-      if (!options.silent) showToast("가족 가계부와 동기화했어요.");
+      if (!options.silent) showToast("가계부를 모든 기기와 동기화했어요.");
+      return true;
     } catch (error) {
       const message = normalizeCloudError(error);
       state.cloud.lastError = message;
       persistState();
       setCloudStatus("error", message);
+      showAuthGate("error", { message });
       if (!options.silent) showToast(message, "error");
+      return false;
     } finally {
       cloudSyncInProgress = false;
       renderCloudUI();
@@ -663,6 +766,7 @@
     cloudMembers = [];
     renderAll();
     setCloudStatus("local");
+    showAuthGate("error", { message: "로그인 서버 연결 정보가 아직 설정되지 않았어요." });
     showToast("클라우드 연결을 지웠어요. 로컬 데이터는 유지됩니다.");
   }
 
@@ -745,10 +849,13 @@
   }
 
   function bindCloudEvents() {
-    $$('[data-cloud-auth-mode]').forEach((button) => button.addEventListener("click", () => updateAuthMode(button.dataset.cloudAuthMode)));
-    $("#cloud-auth-form").addEventListener("submit", handleAuthSubmit);
+    $$('[data-cloud-auth-mode]').forEach((button) => button.addEventListener("click", () => {
+      updateAuthMode(button.dataset.cloudAuthMode);
+      setAuthGateStatus();
+    }));
+    $$('[data-auth-form]').forEach((form) => form.addEventListener("submit", handleAuthSubmit));
     $("#create-household-form").addEventListener("submit", handleCreateHousehold);
-    $("#join-household-form").addEventListener("submit", handleJoinHousehold);
+    $$('[data-household-join-form]').forEach((form) => form.addEventListener("submit", handleJoinHousehold));
     $("#cloud-config-form").addEventListener("submit", saveCloudConfiguration);
     $("#clear-cloud-config-button").addEventListener("click", clearCloudConfiguration);
     $("#open-cloud-config-button").addEventListener("click", () => {
@@ -760,9 +867,16 @@
     $("#sync-now-button").addEventListener("click", () => syncNow());
     $("#copy-invite-code-button").addEventListener("click", copyInviteCode);
     $("#install-app-button").addEventListener("click", installApp);
-    $("#household-invite-code-input").addEventListener("input", (event) => {
-      event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    $("#auth-gate-dialog").addEventListener("cancel", (event) => event.preventDefault());
+    $("#auth-gate-retry-button").addEventListener("click", initializeCloud);
+    $("#auth-gate-offline-button").addEventListener("click", () => {
+      hideAuthGate();
+      setCloudStatus("ready", "오프라인 캐시를 사용하고 있어요.");
+      window.PoundwiseApp?.openOnboardingIfNeeded();
     });
+    $$('[data-household-invite-code]').forEach((input) => input.addEventListener("input", (event) => {
+      event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    }));
     window.addEventListener("online", () => {
       renderCloudUI();
       queueSync(150);
