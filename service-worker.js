@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "poundwise-shell-v4";
+const CACHE_NAME = "poundwise-shell-v5";
 const APP_SHELL = [
   "./",
   "./index.html",

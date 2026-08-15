@@ -141,6 +141,7 @@
   function hideAuthGate() {
     const dialog = $("#auth-gate-dialog");
     if (dialog?.open) dialog.close();
+    setAuthGateStatus();
   }
 
   function renderCloudUI() {
@@ -263,7 +264,6 @@
     $$('[data-auth-submit]').forEach((button) => {
       button.textContent = cloudAuthMode === "signup" ? "계정 만들기" : "로그인";
     });
-    setAuthGateStatus();
   }
 
   async function createClientFromConfig() {
